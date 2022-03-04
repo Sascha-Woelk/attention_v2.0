@@ -1,0 +1,13 @@
+config_name: 'config_6'
+directory: '/fast-data22/datasets/ILSVRC/2012/clsloc/'
+training_folder: 'train'
+test_folder: 'val_white'
+img_size: [224,224]
+batch_size: 64
+base_learning_rate: 0.0000001
+sampling_rate: 0.25
+target_class: 'None'
+target_class_weight: 'None'
+epochs: 20
+patience: 5
+training_layers: 'all'
