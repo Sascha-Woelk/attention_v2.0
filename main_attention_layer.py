@@ -76,23 +76,29 @@ print("retrained base model accuracy: {:.2f}".format(accuracy1))
 
 # construct the new model with the additional layer
 base_model.trainable = False
-attention_model = tf.keras.Sequential(name='attention_model')
+
+IMG_SHAPE = IMG_SIZE + (3,)
+inputs = tf.keras.Input(shape=IMG_SHAPE)
 new_layer_at = 15
 initializer = tf.keras.initializers.Ones()
 constraint = tf.keras.constraints.NonNeg()
 
-for layer in range(len(base_model.layers) + 1):
-  if layer < new_layer_at:
-    attention_model.add(base_model.layers[layer])
+for layer in range(1,len(base_model.layers) + 1):
+  if layer == 1:
+    x = base_model.layers[layer](inputs)
+  elif layer < new_layer_at:
+    x = base_model.layers[layer](x)
   elif layer == new_layer_at:
-    attention_model.add(custom_dense(512,
-                                     use_bias=False,
-                                     kernel_initializer=initializer,
-                                     kernel_constraint=constraint,
-                                     name='attention_layer'))
+    x = custom_dense(512,
+                      use_bias=False,
+                      kernel_initializer=initializer,
+                      kernel_constraint=constraint,
+                      name='attention_layer')(x)
   else:
-    attention_model.add(base_model.layers[layer-1])
+    x = base_model.layers[layer-1](x)
+outputs = x
 
+attention_model = tf.keras.Model(inputs=inputs, outputs=outputs, name='attention_model')
 attention_model.summary()
 print("Number of layers in the attention model: ", len(attention_model.layers))
 print("Number of trainable variables is: ", len(attention_model.trainable_variables))  
