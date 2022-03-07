@@ -3,13 +3,8 @@ from modules.setup_file import *
 from modules.custom_dense import custom_dense
 from imagenet1k_class2labels import class_dictionary
 
-# # load Tensorboard extension
-# %load_ext tensorboard
-# # clear any logs from previous runs
-# !rm -rf ./logs/
-
 # import hyperparameters
-with open('config_6.yaml', 'r') as file:
+with open('config_8.yaml', 'r') as file:
     hyper_params = yaml.safe_load(file)
 try:
   sampling_rate = hyper_params['sampling_rate']
@@ -21,7 +16,7 @@ print(hyper_params['config_name'])
 working_directory = os.getcwd()
 charts_dir = os.path.join(working_directory, 'charts/')
 log_dir = "logs/fit/" + dt.datetime.now().strftime("%Y%m%d-%H%M%S") 
-checkpoint_path = "log_{}/cp.ckpt".format(hyper_params['config_name'])
+checkpoint_path = "log_attention_{}/cp.ckpt".format(hyper_params['config_name'])
 checkpoint_dir = os.path.dirname(checkpoint_path)
 
 # set dataset directory paths
@@ -33,16 +28,16 @@ test_dir = os.path.join(PATH, hyper_params['test_folder'])
 IMG_SIZE = tuple(hyper_params['img_size'])
 BATCH_SIZE = hyper_params['batch_size']
 
-# find the numeric labels of all classes containing the target class keyword
-target_classes = []
-target_string = re.compile(r'\bcat\b', re.IGNORECASE)
-for index, (key, value) in enumerate(class_dictionary.items()):
-  string_match = target_string.search(value)
-  if string_match:
-    target_classes.append(key)
-print("Focusing attention on the following classes:")    
-for match in target_classes:
-  print(class_dictionary[match])
+# # find the numeric labels of all classes containing the target class keyword
+# target_classes = []
+# target_string = re.compile(r'\bcat\b', re.IGNORECASE)
+# for index, (key, value) in enumerate(class_dictionary.items()):
+#   string_match = target_string.search(value)
+#   if string_match:
+#     target_classes.append(key)
+# print("Focusing attention on the following classes:")    
+# for match in target_classes:
+#   print(class_dictionary[match])
 
 # create image import pipeline
 from modules.import_pipeline import import_pipeline
@@ -50,9 +45,9 @@ train_generator, validation_generator, test_generator = import_pipeline(train_di
                                                                         test_dir,
                                                                         IMG_SIZE,
                                                                         BATCH_SIZE,
-                                                                        target_class = target_classes,
+                                                                        target_class = hyper_params['target_class'],
                                                                         sampling_rate = hyper_params['sampling_rate'],
-                                                                        target_class_weight = 0.1)
+                                                                        target_class_weight = hyper_params['target_class_weight'])
 
 # load VGG16 pre-trained on ImageNet
 base_model = tf.keras.applications.VGG16(include_top=True,
@@ -119,17 +114,17 @@ print("untrained attention model accuracy: {:.2f}".format(accuracy2))
 # define callbacks
 callbacks = [
     tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=hyper_params['patience'], mode='auto'),
-    # tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path,
-    #                                   monitor='val_loss',
-    #                                   verbose=1,
-    #                                   save_best_only=True,
-    #                                   save_weights_only=True,
-    #                                   mode='auto',
-    #                                   save_freq='epoch',
-    #                                   options=None),
+    tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path,
+                                      monitor='val_loss',
+                                      verbose=1,
+                                      save_best_only=True,
+                                      save_weights_only=True,
+                                      mode='auto',
+                                      save_freq='epoch',
+                                      options=None),
     tf.keras.callbacks.ReduceLROnPlateau(monitor='val_loss',
-                                        factor=0.5,
-                                        patience=3,
+                                        factor=hyper_params['reduceLROP_factor'],
+                                        patience=hyper_params['patience'],
                                         verbose=0,
                                         mode='auto'),
     tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)

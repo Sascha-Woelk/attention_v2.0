@@ -61,11 +61,18 @@ class CustomIterator(IteratorType):
         if self.target_class is not None:
             self.target_class_indices = []
             self.non_target_class_indices = []
-            for i, j in enumerate(self.classes):
-                if j in self.target_class:
-                    self.target_class_indices.append(self.index_array[i])
-                else:
-                    self.non_target_class_indices.append(self.index_array[i])
+            if isinstance(self.target_class, int):
+                for i, j in enumerate(self.classes):
+                    if j == self.target_class:
+                        self.target_class_indices.append(self.index_array[i])
+                    else:
+                        self.non_target_class_indices.append(self.index_array[i]) 
+            else:
+                for i, j in enumerate(self.classes):
+                    if j in self.target_class:
+                        self.target_class_indices.append(self.index_array[i])
+                    else:
+                        self.non_target_class_indices.append(self.index_array[i])
             
         # SW create a weighted index_array based on the target class weight
         np.random.seed(1)
