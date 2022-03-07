@@ -99,7 +99,7 @@ class CustomIterator(IteratorType):
             self.index_array = new_index_array
             if self.shuffle:
                 self.index_array = np.random.permutation(self.index_array)
-        # else:
+        else:
             if self.sampling_rate is not None:
                 unique_classes = np.unique(self.classes)
                 new_index_array = np.empty((0), dtype=int)

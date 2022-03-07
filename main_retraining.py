@@ -1,11 +1,6 @@
 # import libraries
 from modules.setup_file import *
 
-# # load Tensorboard extension
-# %load_ext tensorboard
-# # clear any logs from previous runs
-# !rm -rf ./logs/
-
 # import hyperparameters
 with open('config_6.yaml', 'r') as file:
     hyper_params = yaml.safe_load(file)
@@ -44,8 +39,8 @@ train_generator, validation_generator, test_generator = import_pipeline(train_di
                                                                         test_dir,
                                                                         IMG_SIZE,
                                                                         BATCH_SIZE,
-                                                                        target_class = None,
-                                                                        sampling_rate = sampling_rate,
+                                                                        target_class = None,      
+                                                                        sampling_rate = 0.1,
                                                                         target_class_weight = None)
 
 # display a sample image and print it's label and dimensions
@@ -93,9 +88,6 @@ base_model.compile(optimizer=optimizer,
 loss0, accuracy0 = base_model.evaluate(test_generator)
 print("initial loss: {:.2f}".format(loss0))
 print("initial accuracy: {:.2f}".format(accuracy0))
-
-# # open Tensorboard with the log directory
-# %tensorboard --logdir logs/fit
 
 # fit the base model on the ImageNet dataset
 history = base_model.fit(train_generator,

@@ -9,7 +9,7 @@ from imagenet1k_class2labels import class_dictionary
 # !rm -rf ./logs/
 
 # import hyperparameters
-with open('config_1.yaml', 'r') as file:
+with open('config_6.yaml', 'r') as file:
     hyper_params = yaml.safe_load(file)
 try:
   sampling_rate = hyper_params['sampling_rate']
@@ -51,7 +51,7 @@ train_generator, validation_generator, test_generator = import_pipeline(train_di
                                                                         IMG_SIZE,
                                                                         BATCH_SIZE,
                                                                         target_class = target_classes,
-                                                                        sampling_rate = None,
+                                                                        sampling_rate = hyper_params['sampling_rate'],
                                                                         target_class_weight = 0.1)
 
 # load VGG16 pre-trained on ImageNet
