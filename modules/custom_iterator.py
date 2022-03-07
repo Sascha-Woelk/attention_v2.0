@@ -70,31 +70,34 @@ class CustomIterator(IteratorType):
         # SW create a weighted index_array based on the target class weight
         np.random.seed(1)
         if self.target_class_weight is not None:
-            # identify how many sample to take from each non-target class
-            self.total_classes = len(np.unique(self.classes))
-            self.target_class_subclasses = len(self.target_class)
-            self.non_target_class_subclasses = self.total_classes - self.target_class_subclasses
+            if self.sampling_rate is not None:
+                print("Ignoring sampling rate, as target class weight has priority.")
+            # identify how many sample to take across non-target classee
             self.target_class_size = len(self.target_class_indices)
             self.non_target_class_size = self.target_class_size / self.target_class_weight - self.target_class_size
-            self.samples_per_non_target_subclass = np.round(self.non_target_class_size / self.non_target_class_subclasses)
-            # resample the target and non-target-indices based on required weighting and sampling rate
-            unique_classes = np.unique(self.classes)
-            self.target_class_indices = np.empty((0), dtype=int)
-            self.non_target_class_indices = np.empty((0), dtype=int)
-            new_index_array = np.empty((0), dtype=int)
-            if self.sampling_rate is not None:
-                sampling_rate = self.sampling_rate
-            else:
-                sampling_rate = 1
-            for class_number in unique_classes:
-                class_indices = self.index_array[self.classes == class_number]
-                if class_number in self.target_class:
-                    subsampled_indices = np.random.choice(class_indices, size=int(len(class_indices) * sampling_rate))
-                    self.target_class_indices = np.append(self.target_class_indices, subsampled_indices)
-                else:
-                    subsampled_indices = np.random.choice(class_indices, size=int(self.samples_per_non_target_subclass * sampling_rate))
-                    self.non_target_class_indices = np.append(self.non_target_class_indices, subsampled_indices)
-            print("Target class weight set to {}. Making available {} images across target (sub-)classes and {} images across all non-target classes, with {} samples per non-target class.".format(self.target_class_weight, self.target_class_size, self.non_target_class_size, self.samples_per_non_target_subclass))
+            # resample the target and non-target-indices based on required weighting
+            self.non_target_class_indices = np.random.choice(self.non_target_class_indices, size=int(self.non_target_class_size))
+            print("Target class weight set to {}. Making available {} images across target (sub-)classes and {} images randomly sampled across all non-target classes.".format(self.target_class_weight, self.target_class_size, self.non_target_class_size))
+            ## CODE FOR SAMPLING EVENLY ACROSS NON-TARGET CLASSES            
+            # self.samples_per_non_target_subclass = np.round(self.non_target_class_size / self.non_target_class_subclasses)
+            # # resample the target and non-target-indices based on required weighting and sampling rate
+            # unique_classes = np.unique(self.classes)
+            # self.target_class_indices = np.empty((0), dtype=int)
+            # self.non_target_class_indices = np.empty((0), dtype=int)
+            # new_index_array = np.empty((0), dtype=int)
+            # if self.sampling_rate is not None:
+            #     sampling_rate = self.sampling_rate
+            # else:
+            #     sampling_rate = 1
+            # for class_number in unique_classes:
+            #     class_indices = self.index_array[self.classes == class_number]
+            #     if class_number in self.target_class:
+            #         subsampled_indices = np.random.choice(class_indices, size=int(len(class_indices) * sampling_rate))
+            #         self.target_class_indices = np.append(self.target_class_indices, subsampled_indices)
+            #     else:
+            #         subsampled_indices = np.random.choice(class_indices, size=int(self.samples_per_non_target_subclass * sampling_rate))
+            #         self.non_target_class_indices = np.append(self.non_target_class_indices, subsampled_indices)
+            # print("Target class weight set to {}. Making available {} images across target (sub-)classes and {} images across all non-target classes, with {} samples per non-target class.".format(self.target_class_weight, self.target_class_size, self.non_target_class_size, self.samples_per_non_target_subclass))
             new_index_array = np.append(self.target_class_indices, self.non_target_class_indices)
             self.index_array = new_index_array
             if self.shuffle:
