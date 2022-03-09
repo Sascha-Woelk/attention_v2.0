@@ -91,10 +91,9 @@ for layer in range(1,len(base_model.layers) + 1):
                       kernel_initializer=initializer,
                       kernel_constraint=constraint,
                       name='attention_layer')(x)
-  elif layer < len(base_model.layers) - 3:
-    x = base_model.layers[layer-1](x)
-  # else:
-  #   x = base_model.layers[layer-1](x)
+  else:
+    pass
+    # x = base_model.layers[layer-1](x)
 outputs = x
 
 attention_model = tf.keras.Model(inputs=inputs, outputs=outputs, name='attention_model')
@@ -116,7 +115,7 @@ attention_weight_extracted = attention_model.get_layer('attention_layer').get_we
 print("Every second weight set to zero: {}".format(((attention_weight_extracted[1::2] == 0)).any()))
 # run one batch and select only the filter dimension from the prediction
 prediction_sample = attention_model.predict(next(iter(train_generator))[0])[3][0,0,:]
-print("All corresponding final layer outpus equal to zero: {}".format(~((prediction_sample[1::2] == 0)).any()))
+print("All corresponding final layer outpus equal to zero: {}".format((prediction_sample[1::2] == 0).all()))
 
 # evaluate the untrained attention model
 loss2, accuracy2 = attention_model.evaluate(test_generator)
