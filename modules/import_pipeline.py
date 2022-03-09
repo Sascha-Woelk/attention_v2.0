@@ -5,7 +5,7 @@ from tensorflow.keras.applications.vgg16 import preprocess_input
 def import_pipeline(train_dir, test_dir, IMG_SIZE, BATCH_SIZE, target_class=None, sampling_rate=None, target_class_weight=None):
     
     train_datagen = ImageDataGenerator(preprocessing_function = preprocess_input,
-                                       validation_split=0.2)
+                                       validation_split=0.1)
     test_datagen = ImageDataGenerator(preprocessing_function = preprocess_input)
 
     train_generator = flow_from_directory_independent(train_datagen,

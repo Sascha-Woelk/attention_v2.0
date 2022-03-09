@@ -1,7 +1,9 @@
 # import libraries
 from modules.setup_file import *
-from modules.custom_dense import custom_dense
 from imagenet1k_class2labels import class_dictionary
+from modules.import_pipeline import import_pipeline
+from modules.custom_initializer import custom_onezero_initializer
+from modules.custom_dense import custom_dense
 
 # import hyperparameters
 with open('config_8.yaml', 'r') as file:
@@ -40,7 +42,6 @@ BATCH_SIZE = hyper_params['batch_size']
 #   print(class_dictionary[match])
 
 # create image import pipeline
-from modules.import_pipeline import import_pipeline
 train_generator, validation_generator, test_generator = import_pipeline(train_dir,
                                                                         test_dir,
                                                                         IMG_SIZE,
@@ -75,7 +76,8 @@ base_model.trainable = False
 IMG_SHAPE = IMG_SIZE + (3,)
 inputs = tf.keras.Input(shape=IMG_SHAPE)
 new_layer_at = 15
-initializer = tf.keras.initializers.Ones()
+# initializer = tf.keras.initializers.Ones()
+initializer = custom_onezero_initializer()
 constraint = tf.keras.constraints.NonNeg()
 
 for layer in range(1,len(base_model.layers) + 1):
@@ -89,8 +91,10 @@ for layer in range(1,len(base_model.layers) + 1):
                       kernel_initializer=initializer,
                       kernel_constraint=constraint,
                       name='attention_layer')(x)
-  else:
+  elif layer < len(base_model.layers) - 3:
     x = base_model.layers[layer-1](x)
+  # else:
+  #   x = base_model.layers[layer-1](x)
 outputs = x
 
 attention_model = tf.keras.Model(inputs=inputs, outputs=outputs, name='attention_model')
@@ -105,6 +109,14 @@ loss = tf.keras.losses.CategoricalCrossentropy()
 attention_model.compile(optimizer=optimizer,
               loss=loss,
               metrics=['accuracy'])
+
+## confirm the attention layer is working as expected
+# extract attention weights and confirm every second weight is set to zero
+attention_weight_extracted = attention_model.get_layer('attention_layer').get_weights()[0][0,:]
+print("Every second weight set to zero: {}".format(((attention_weight_extracted[1::2] == 0)).any()))
+# run one batch and select only the filter dimension from the prediction
+prediction_sample = attention_model.predict(next(iter(train_generator))[0])[3][0,0,:]
+print("All corresponding final layer outpus equal to zero: {}".format(~((prediction_sample[1::2] == 0)).any()))
 
 # evaluate the untrained attention model
 loss2, accuracy2 = attention_model.evaluate(test_generator)

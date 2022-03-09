@@ -10,4 +10,4 @@ target_class: 281
 target_class_weight: 0.5
 epochs: 50
 reduceLROP_factor: 0.5
-patience: 2
+patience: 5
