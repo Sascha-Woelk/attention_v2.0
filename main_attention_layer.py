@@ -6,7 +6,7 @@ from modules.custom_initializer import custom_onezero_initializer
 from modules.custom_dense import custom_dense
 
 # import hyperparameters
-with open('config_8.yaml', 'r') as file:
+with open('configs/config_9.yaml', 'r') as file:
     hyper_params = yaml.safe_load(file)
 try:
   sampling_rate = hyper_params['sampling_rate']
@@ -14,140 +14,173 @@ except:
   sampling_rate = None
 print(hyper_params['config_name'])
 
-# identify current working directory and set up subdirectories
-working_directory = os.getcwd()
-charts_dir = os.path.join(working_directory, 'charts/')
-log_dir = "logs/fit/" + dt.datetime.now().strftime("%Y%m%d-%H%M%S") 
-checkpoint_path = "log_attention_{}/cp.ckpt".format(hyper_params['config_name'])
-checkpoint_dir = os.path.dirname(checkpoint_path)
+target_class_weights = [0.9, 0.7, 0.5, 0.3, 0.1]
 
-# set dataset directory paths
-PATH = os.path.dirname(hyper_params['directory'])
-train_dir = os.path.join(PATH, hyper_params['training_folder'])
-test_dir = os.path.join(PATH, hyper_params['test_folder'])
+for intensity in target_class_weights:
 
-# set model hyperparameters
-IMG_SIZE = tuple(hyper_params['img_size'])
-BATCH_SIZE = hyper_params['batch_size']
+  # identify current working directory and set up subdirectories
+  working_directory = os.getcwd()
+  charts_dir = os.path.join(working_directory, 'charts/')
+  log_dir = "logs/fit/{}/".format(intensity*1000) + dt.datetime.now().strftime("%Y%m%d-%H%M%S") 
+  # checkpoint_path = "log_attention_{}/cp.ckpt".format(hyper_params['config_name'])
+  # checkpoint_dir = os.path.dirname(checkpoint_path)
 
-# # find the numeric labels of all classes containing the target class keyword
-# target_classes = []
-# target_string = re.compile(r'\bcat\b', re.IGNORECASE)
-# for index, (key, value) in enumerate(class_dictionary.items()):
-#   string_match = target_string.search(value)
-#   if string_match:
-#     target_classes.append(key)
-# print("Focusing attention on the following classes:")    
-# for match in target_classes:
-#   print(class_dictionary[match])
+  # set dataset directory paths
+  PATH = os.path.dirname(hyper_params['directory'])
+  train_dir = os.path.join(PATH, hyper_params['training_folder'])
+  test_dir = os.path.join(PATH, hyper_params['test_folder'])
 
-# create image import pipeline
-train_generator, validation_generator, test_generator = import_pipeline(train_dir,
-                                                                        test_dir,
-                                                                        IMG_SIZE,
-                                                                        BATCH_SIZE,
-                                                                        target_class = hyper_params['target_class'],
-                                                                        sampling_rate = hyper_params['sampling_rate'],
-                                                                        target_class_weight = hyper_params['target_class_weight'])
+  # set model hyperparameters
+  IMG_SIZE = tuple(hyper_params['img_size'])
+  BATCH_SIZE = hyper_params['batch_size']
 
-# load VGG16 pre-trained on ImageNet
-base_model = tf.keras.applications.VGG16(include_top=True,
-                                         weights='imagenet',
-                                         classifier_activation='softmax')
+  # # find the numeric labels of all classes containing the target class keyword
+  # target_classes = []
+  # target_string = re.compile(r'\bcat\b', re.IGNORECASE)
+  # for index, (key, value) in enumerate(class_dictionary.items()):
+  #   string_match = target_string.search(value)
+  #   if string_match:
+  #     target_classes.append(key)
+  # print("Focusing attention on the following classes:")    
+  # for match in target_classes:
+  #   print(class_dictionary[match])
 
-# Load the retrained weights
-base_model.load_weights('log_config_6/cp.ckpt')
+  # create image import pipeline
+  train_generator, validation_generator, test_generator = import_pipeline(train_dir,
+                                                                          test_dir,
+                                                                          IMG_SIZE,
+                                                                          BATCH_SIZE,
+                                                                          target_class = hyper_params['target_class'],
+                                                                          sampling_rate = hyper_params['sampling_rate'],
+                                                                          target_class_weight = hyper_params['target_class_weight'],
+                                                                          )
 
-# compile the model
-optimizer = tf.keras.optimizers.Adam(learning_rate=hyper_params['base_learning_rate'])
-loss = tf.keras.losses.CategoricalCrossentropy()
-base_model.compile(optimizer=optimizer,
-              loss=loss,
-              metrics=['accuracy'])
+  # load VGG16 pre-trained on ImageNet
+  base_model = tf.keras.applications.VGG16(include_top=True,
+                                          weights='imagenet',
+                                          classifier_activation='softmax')
 
-# evaluate the retrained model
-loss1, accuracy1 = base_model.evaluate(test_generator)
-print("retrained base model loss: {:.2f}".format(loss1))
-print("retrained base model accuracy: {:.2f}".format(accuracy1))
+  # Load the retrained weights
+  base_model.load_weights('log_config_6/cp.ckpt')
 
-# construct the new model with the additional layer
-base_model.trainable = False
+  # compile the model
+  optimizer = tf.keras.optimizers.Adam(learning_rate=hyper_params['base_learning_rate'])
+  loss = tf.keras.losses.CategoricalCrossentropy()
+  base_model.compile(optimizer=optimizer,
+                loss=loss,
+                metrics=['accuracy'])
+  
+  # evaluate the retrained model
+  loss1, accuracy1 = base_model.evaluate(test_generator)
+  print("retrained base model loss: {:.2f}".format(loss1))
+  print("retrained base model accuracy: {:.2f}".format(accuracy1))
 
-IMG_SHAPE = IMG_SIZE + (3,)
-inputs = tf.keras.Input(shape=IMG_SHAPE)
-new_layer_at = 15
-# initializer = tf.keras.initializers.Ones()
-initializer = custom_onezero_initializer()
-constraint = tf.keras.constraints.NonNeg()
+  ## construct the new model with the additional layer
+  # build a test model only up to and including the attention layer
+  base_model.trainable = False
+  IMG_SHAPE = IMG_SIZE + (3,)
+  inputs = tf.keras.Input(shape=IMG_SHAPE)
+  new_layer_at = 15
+  constraint = tf.keras.constraints.NonNeg()
+  initializer = custom_onezero_initializer()
 
-for layer in range(1,len(base_model.layers) + 1):
-  if layer == 1:
-    x = base_model.layers[layer](inputs)
-  elif layer < new_layer_at:
-    x = base_model.layers[layer](x)
-  elif layer == new_layer_at:
-    x = custom_dense(512,
-                      use_bias=False,
-                      kernel_initializer=initializer,
-                      kernel_constraint=constraint,
-                      name='attention_layer')(x)
-  else:
-    pass
-    # x = base_model.layers[layer-1](x)
-outputs = x
+  for layer in range(1,len(base_model.layers) + 1):
+    if layer == 1:
+      x = base_model.layers[layer](inputs)
+    elif layer < new_layer_at:
+      x = base_model.layers[layer](x)
+    elif layer == new_layer_at:
+      x = custom_dense(512,
+                        use_bias=False,
+                        kernel_initializer=initializer,
+                        kernel_constraint=constraint,
+                        name='attention_layer')(x)
+    else:
+      pass
+  outputs = x
 
-attention_model = tf.keras.Model(inputs=inputs, outputs=outputs, name='attention_model')
-attention_model.summary()
-print("Number of layers in the attention model: ", len(attention_model.layers))
-print("Number of trainable variables is: ", len(attention_model.trainable_variables))  
-print("Attention layer set to trainable: ", attention_model.get_layer('attention_layer').trainable)
+  test_attention_model = tf.keras.Model(inputs=inputs, outputs=outputs, name='attention_model')
 
-# compile the model
-optimizer = tf.keras.optimizers.Adam(learning_rate=hyper_params['base_learning_rate'])
-loss = tf.keras.losses.CategoricalCrossentropy()
-attention_model.compile(optimizer=optimizer,
-              loss=loss,
-              metrics=['accuracy'])
+  # compile the test attention model
+  optimizer = tf.keras.optimizers.Adam(learning_rate=hyper_params['base_learning_rate'])
+  loss = tf.keras.losses.CategoricalCrossentropy()
+  test_attention_model.compile(optimizer=optimizer,
+                              loss=loss,
+                              metrics=['accuracy'])
 
-## confirm the attention layer is working as expected
-# extract attention weights and confirm every second weight is set to zero
-attention_weight_extracted = attention_model.get_layer('attention_layer').get_weights()[0][0,:]
-print("Every second weight set to zero: {}".format(((attention_weight_extracted[1::2] == 0)).any()))
-# run one batch and select only the filter dimension from the prediction
-prediction_sample = attention_model.predict(next(iter(train_generator))[0])[3][0,0,:]
-print("All corresponding final layer outpus equal to zero: {}".format((prediction_sample[1::2] == 0).all()))
+  ## confirm the attention layer is working as expected
+  # extract attention weights and confirm every second weight is set to zero
+  attention_weight_extracted = test_attention_model.get_layer('attention_layer').get_weights()[0][0,:]
+  print("Every second weight set to zero: {}".format(((attention_weight_extracted[1::2] == 0)).any()))
+  # run one batch and select only the filter dimension from the prediction
+  prediction_sample = test_attention_model.predict(next(iter(train_generator))[0])[3][0,0,:]
+  print("All corresponding final layer outpus equal to zero: {}".format((prediction_sample[1::2] == 0).all()))
 
-# evaluate the untrained attention model
-loss2, accuracy2 = attention_model.evaluate(test_generator)
-print("untrained attention model loss: {:.2f}".format(loss2))
-print("untrained attention model accuracy: {:.2f}".format(accuracy2))
+  # build the actual attention model
+  initializer = tf.keras.initializers.Ones()
 
-# define callbacks
-callbacks = [
-    tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=hyper_params['patience'], mode='auto'),
-    tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path,
-                                      monitor='val_loss',
-                                      verbose=1,
-                                      save_best_only=True,
-                                      save_weights_only=True,
-                                      mode='auto',
-                                      save_freq='epoch',
-                                      options=None),
-    tf.keras.callbacks.ReduceLROnPlateau(monitor='val_loss',
-                                        factor=hyper_params['reduceLROP_factor'],
-                                        patience=hyper_params['patience'],
-                                        verbose=0,
-                                        mode='auto'),
-    tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
-  ]
+  for layer in range(1,len(base_model.layers) + 1):
+    if layer == 1:
+      x = base_model.layers[layer](inputs)
+    elif layer < new_layer_at:
+      x = base_model.layers[layer](x)
+    elif layer == new_layer_at:
+      x = custom_dense(512,
+                        use_bias=False,
+                        kernel_initializer=initializer,
+                        kernel_constraint=constraint,
+                        name='attention_layer')(x)
+    else:
+      pass
+      x = base_model.layers[layer-1](x)
+  outputs = x
 
-# fit the base model on the ImageNet dataset
-history = attention_model.fit(train_generator,
-                              epochs=hyper_params['epochs'],
-                              batch_size=hyper_params['batch_size'],
-                              validation_data=validation_generator,
-                              verbose=1,
-                              callbacks=callbacks)
+  attention_model = tf.keras.Model(inputs=inputs, outputs=outputs, name='attention_model')
+  attention_model.summary()
+  print("Number of layers in the attention model: ", len(attention_model.layers))
+  print("Number of trainable variables is: ", len(attention_model.trainable_variables))  
+  print("Attention layer set to trainable: ", attention_model.get_layer('attention_layer').trainable)
+
+  # compile the model
+  optimizer = tf.keras.optimizers.Adam(learning_rate=hyper_params['base_learning_rate'])
+  loss = tf.keras.losses.CategoricalCrossentropy()
+  attention_model.compile(optimizer=optimizer,
+                loss=loss,
+                metrics=['accuracy',
+                        tf.keras.metrics.TopKCategoricalAccuracy(k=5, name='top_k_categorical_accuracy', dtype=None)])
+
+  # evaluate the untrained attention model
+  loss2, accuracy2, top5accuracy = attention_model.evaluate(test_generator)
+  print("untrained attention model loss: {:.2f}".format(loss2))
+  print("untrained attention model accuracy: {:.2f}".format(accuracy2))
+  print("untrained attention model top5accuracy: {:.2f}".format(top5accuracy))
+
+  # define callbacks
+  callbacks = [
+      tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=hyper_params['patience'], mode='auto'),
+      # tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path,
+      #                                   monitor='val_loss',
+      #                                   verbose=1,
+      #                                   save_best_only=True,
+      #                                   save_weights_only=True,
+      #                                   mode='auto',
+      #                                   save_freq='epoch',
+      #                                   options=None),
+      tf.keras.callbacks.ReduceLROnPlateau(monitor='val_loss',
+                                          factor=hyper_params['reduceLROP_factor'],
+                                          patience=hyper_params['patience'],
+                                          verbose=0,
+                                          mode='auto'),
+      tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
+    ]
+
+  # fit the base model on the ImageNet dataset
+  history = attention_model.fit(train_generator,
+                                epochs=hyper_params['epochs'],
+                                batch_size=hyper_params['batch_size'],
+                                validation_data=validation_generator,
+                                verbose=1,
+                                callbacks=callbacks)
 
 # graph the history for accuracy
 fig = plt.figure()

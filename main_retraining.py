@@ -2,7 +2,7 @@
 from modules.setup_file import *
 
 # import hyperparameters
-with open('config_6.yaml', 'r') as file:
+with open('configs/config_6.yaml', 'r') as file:
     hyper_params = yaml.safe_load(file)
 try:
   sampling_rate = hyper_params['sampling_rate']
