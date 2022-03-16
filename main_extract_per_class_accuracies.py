@@ -54,12 +54,15 @@ confusion_matrix = tf.math.confusion_matrix(Y_true, Y_pred)
 # calculate signal detection metrics
 stimuli_per_class = confusion_matrix.numpy().sum(axis=1) 
 predictions_per_class = confusion_matrix.numpy().sum(axis=0)
+
 true_positives = np.diag(confusion_matrix)
 false_positives = predictions_per_class - true_positives
 false_negatives = stimuli_per_class - true_positives
 true_negatives = confusion_matrix.numpy().sum() - (true_positives + false_positives + false_negatives)
+
 hit_rate = true_positives/(true_positives + false_negatives)
 false_alarm_rate = false_positives/(false_positives + true_negatives)
+
 per_class_accuracy = (true_positives + true_negatives) / (false_positives + false_negatives + true_positives + true_negatives)
 per_class_precision = true_positives / (true_positives + false_positives)
 per_class_recall = true_positives / (true_positives + false_negatives)
