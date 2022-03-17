@@ -7,6 +7,7 @@ from PIL import Image
 import re
 import datetime as dt
 import tensorflow as tf
+import pickle
 
 # set up GPUs and output
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'

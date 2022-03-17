@@ -3,8 +3,10 @@ modules/__pycache__/
 *.py[cod]
 *.so
 
+files/
 charts/
 logs/
+checkpoints/
 model/
 log_config_7/
 log_config_6/

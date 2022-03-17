@@ -3,11 +3,11 @@ directory: '/fast-data22/datasets/ILSVRC/2012/clsloc/'
 training_folder: 'train'
 test_folder: 'val_white'
 img_size: [224,224]
-batch_size: 16
+batch_size: 64
 base_learning_rate: 0.0003
 sampling_rate: None
-target_class: 281
+target_class: See main script
 target_class_weight: See main script
-epochs: 20
+epochs: 100
 reduceLROP_factor: 0.5
-patience: 2
+patience: 5
