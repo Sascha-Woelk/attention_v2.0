@@ -61,7 +61,7 @@ class CustomIterator(IteratorType):
         if self.target_class is not None:
             self.target_class_indices = []
             self.non_target_class_indices = []
-            if isinstance(self.target_class, int):
+            if isinstance(self.target_class, np.int64):
                 for i, j in enumerate(self.classes):
                     if j == self.target_class:
                         self.target_class_indices.append(self.index_array[i])
