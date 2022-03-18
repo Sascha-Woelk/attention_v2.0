@@ -29,8 +29,8 @@ for target_class in target_classes:
     # identify current working directory and set up subdirectories
     working_directory = os.getcwd()
     charts_dir = os.path.join(working_directory, 'charts/')
-    log_dir = "logs/fit/class{}_intensity{}/".format(target_class, intensity*1000) + dt.datetime.now().strftime("%Y%m%d-%H%M%S") 
-    checkpoint_path = "checkpoints/log_class{}_intensity{}/cp.ckpt".format(target_class, intensity*1000)
+    log_dir = "logs/fit/class{}_intensity{}/".format(target_class, int(intensity*1000)) + dt.datetime.now().strftime("%Y%m%d-%H%M%S") 
+    checkpoint_path = "checkpoints/log_class{}_intensity{}/cp.ckpt".format(target_class, int(intensity*1000))
     checkpoint_dir = os.path.dirname(checkpoint_path)
 
     # set dataset directory paths
@@ -128,7 +128,6 @@ for target_class in target_classes:
                           kernel_constraint=constraint,
                           name='attention_layer')(x)
       else:
-        pass
         x = base_model.layers[layer-1](x)
     outputs = x
 
@@ -188,7 +187,7 @@ for target_class in target_classes:
     plt.ylabel("Accuracy")
     plt.xlabel("Epoch")
     plt.legend(["Training Accuracy","Validation Accuracy","loss","Validation Loss"])
-    plt.savefig(charts_dir + '{}_accuracy_class{}_intensity{}.png'.format(dt.datetime.today().date(), target_class, intensity*1000))
+    plt.savefig(charts_dir + '{}_accuracy_class{}_intensity{}.png'.format(dt.datetime.today().date(), target_class, int(intensity*1000)))
     plt.show()
 
     # graph the history for loss
@@ -200,7 +199,7 @@ for target_class in target_classes:
     plt.ylabel('loss')
     plt.xlabel('epoch')
     plt.legend(['Training Loss', 'Validation Loss'], loc='upper left')
-    plt.savefig(charts_dir + '{}_loss__class{}_intensity{}.png'.format(dt.datetime.today().date(), target_class, intensity*1000))
+    plt.savefig(charts_dir + '{}_loss__class{}_intensity{}.png'.format(dt.datetime.today().date(), target_class, int(intensity*1000)))
     plt.show()
 
     # evaluate the retrained model
@@ -213,11 +212,11 @@ for target_class in target_classes:
     test_predictions = attention_model.predict(test_generator)
     Y_pred = tf.argmax(test_predictions, axis=-1)
     Y_true = []
-    for i in range(len(test_generator.labels)):
+    for i in range(len(test_generator.index_array)):
         loc_index = test_generator.index_array[i]
         Y_true.append(test_generator.labels[loc_index])  
     confusion_matrix = tf.math.confusion_matrix(Y_true, Y_pred)
     
     # save the confusion matrix for each run
-    with open('files/confusion_matrices/class{}_intensity{}.pickle'.format(target_class, intensity*1000), 'wb') as file:
+    with open('files/confusion_matrices/class{}_intensity{}.pickle'.format(target_class, int(intensity*1000)), 'wb') as file:
       pickle.dump(confusion_matrix, file)

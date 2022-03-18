@@ -46,7 +46,7 @@ base_model.compile(optimizer=optimizer,
 test_predictions = base_model.predict(test_generator)
 Y_pred = tf.argmax(test_predictions, axis=-1)
 Y_true = []
-for i in range(len(test_generator.labels)):
+for i in range(len(test_generator.index_array)):
     loc_index = test_generator.index_array[i]
     Y_true.append(test_generator.labels[loc_index])  
 confusion_matrix = tf.math.confusion_matrix(Y_true, Y_pred)
