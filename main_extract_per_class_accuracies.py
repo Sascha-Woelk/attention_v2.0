@@ -1,6 +1,7 @@
 # import libraries
 from modules.setup_file import *
 from modules.import_pipeline import import_pipeline
+from files.imagenet1k_class2labels import class_dictionary
 
 # import hyperparameters
 with open('configs/config_6.yaml', 'r') as file:
@@ -85,8 +86,31 @@ np.random.seed(1)
 samples_recall_q1 = np.random.choice(recall_q1, size=5)
 samples_recall_q2 = np.random.choice(recall_q2, size=5)
 samples_recall_q3 = np.random.choice(recall_q3, size=5)
-samples_recall_q4 = np.random.choice(recall_q3, size=5)
+samples_recall_q4 = np.random.choice(recall_q4, size=5)
 
 # for results to a pickle file
 with open('files/class_recall_quantiles.pickle', 'wb') as file:
     pickle.dump([samples_recall_q1, samples_recall_q2, samples_recall_q3, samples_recall_q4], file)
+
+# create a summary table with target classes, quantiles, and recall percentiles
+target_classes = np.hstack((samples_recall_q1, samples_recall_q2, samples_recall_q3, samples_recall_q4))
+target_class_summary = pd.DataFrame(target_classes, columns={'target_class'})
+recall_quantiles = []
+for i in target_class_summary['target_class']:
+    if i in samples_recall_q1:
+        recall_quantiles.append('Q1')
+    elif i in samples_recall_q2:
+        recall_quantiles.append('Q2')
+    elif i in samples_recall_q3:
+        recall_quantiles.append('Q3')
+    else:
+        recall_quantiles.append('Q4')
+target_class_summary['quantile'] = recall_quantiles
+recall = []
+class_names = []
+for i in target_class_summary['target_class']:
+    recall.append(per_class_recall[i])
+    class_names.append(class_dictionary.get(i))
+target_class_summary['name'] = class_names
+target_class_summary['recall'] = recall
+print(target_class_summary)
