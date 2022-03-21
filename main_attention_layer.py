@@ -22,7 +22,7 @@ target_classes = np.hstack((samples_recall_q1, samples_recall_q2, samples_recall
 # define attention intensity levels to test
 attention_levels = [0.9, 0.7, 0.5, 0.3, 0.1]
 
-# loop over all target classes x attention intensity levels and to train the attention layer and evaluate
+# loop over all target classes x attention intensity levels to train the attention layer and evaluate
 for target_class in target_classes:
   for intensity in attention_levels:
 

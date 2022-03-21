@@ -14,7 +14,7 @@ PATH = os.path.dirname(hyper_params['directory'])
 train_dir = os.path.join(PATH, hyper_params['training_folder'])
 test_dir = os.path.join(PATH, hyper_params['test_folder'])
 
-# set model hyperparameters
+# load model hyperparameters
 IMG_SIZE = tuple(hyper_params['img_size'])
 BATCH_SIZE = hyper_params['batch_size']
 
@@ -42,7 +42,7 @@ base_model.compile(optimizer=optimizer,
             loss=loss,
             metrics=['accuracy'])
 
-# create confusion matrix
+# predict test set and create confusion matrix
 test_predictions = base_model.predict(test_generator)
 Y_pred = tf.argmax(test_predictions, axis=-1)
 Y_true = []
@@ -87,5 +87,6 @@ samples_recall_q2 = np.random.choice(recall_q2, size=5)
 samples_recall_q3 = np.random.choice(recall_q3, size=5)
 samples_recall_q4 = np.random.choice(recall_q3, size=5)
 
+# for results to a pickle file
 with open('files/class_recall_quantiles.pickle', 'wb') as file:
     pickle.dump([samples_recall_q1, samples_recall_q2, samples_recall_q3, samples_recall_q4], file)
