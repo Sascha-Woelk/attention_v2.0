@@ -116,4 +116,4 @@ for measure in measures:
   sns.pointplot(x="intensity", y=measure, markers='_', color='red', linestyles='', data=data)
   plt.title(measure)
   plt.xlabel('attention intensity')
-  plt.savefig(charts_dir + 'attention_levels/{}{}.png'.format(measure, dt.datetime.today().date()))
+  plt.savefig(charts_dir + 'attention_levels/{}{}.png'.format(measure, dt.datetime.today().date()), dpi=300, bbox_inches='tight')
