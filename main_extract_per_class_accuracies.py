@@ -68,6 +68,10 @@ per_class_accuracy = (true_positives + true_negatives) / (false_positives + fals
 per_class_precision = true_positives / (true_positives + false_positives)
 per_class_recall = true_positives / (true_positives + false_negatives)
 
+# write per_class_recall to a pickle file
+with open('files/per_class_recall.pickle', 'wb') as file:
+    pickle.dump(per_class_recall, file)
+
 # split classes into 4 quantiles, based on recall
 low, mid, high = np.quantile(per_class_recall, [0.25, 0.5, 0.75])
 quantiles = np.where(per_class_recall<=low, 'q1',
@@ -81,6 +85,10 @@ recall_q2 = np.where(quantiles == 'q2')[0]
 recall_q3 = np.where(quantiles == 'q3')[0]
 recall_q4 = np.where(quantiles == 'q4')[0]
 
+# write quantiles to a pickle file
+with open('files/all_class_recall_quantiles.pickle', 'wb') as file:
+    pickle.dump([recall_q1, recall_q2, recall_q3, recall_q4], file)
+
 # select 5 classes from each recall quantile
 np.random.seed(1)
 samples_recall_q1 = np.random.choice(recall_q1, size=5)
@@ -88,8 +96,8 @@ samples_recall_q2 = np.random.choice(recall_q2, size=5)
 samples_recall_q3 = np.random.choice(recall_q3, size=5)
 samples_recall_q4 = np.random.choice(recall_q4, size=5)
 
-# for results to a pickle file
-with open('files/class_recall_quantiles.pickle', 'wb') as file:
+# write results to a pickle file
+with open('files/target_class_recall_quantiles.pickle', 'wb') as file:
     pickle.dump([samples_recall_q1, samples_recall_q2, samples_recall_q3, samples_recall_q4], file)
 
 # create a summary table with target classes, quantiles, and recall percentiles

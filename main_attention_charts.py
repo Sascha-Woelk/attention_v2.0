@@ -47,7 +47,7 @@ def SDT(hits, misses, fas, crs):
     return(out)
 
 # create empty dataframe to hold summary signal detection metrics per class x intensity
-data = pd.DataFrame(columns=['class',
+data = pd.DataFrame(columns=['class_number',
                              'intensity',
                              'hit_rate',
                              'false_alarm_rate',
@@ -96,7 +96,7 @@ for i in range(len(files)):
   class_criterion =signal_metrics['c']
   
   # add all metrics to summary dataframe
-  new_row = {'class': class_number,
+  new_row = {'class_number': class_number,
              'intensity': intensity_level,
              'hit_rate': class_hit_rate,
              'false_alarm_rate': class_false_alarm_rate,
@@ -116,4 +116,39 @@ for measure in measures:
   sns.pointplot(x="intensity", y=measure, markers='_', color='red', linestyles='', data=data)
   plt.title(measure)
   plt.xlabel('attention intensity')
-  plt.savefig(charts_dir + 'attention_levels/{}{}.png'.format(measure, dt.datetime.today().date()), dpi=300, bbox_inches='tight')
+  # plt.savefig(charts_dir + 'attention_levels/{}{}.png'.format(measure, dt.datetime.today().date()), dpi=300, bbox_inches='tight')
+  
+# import per class recall
+with open('files/per_class_recall.pickle', 'rb') as file:
+  per_class_recall = pickle.load(file)
+# import recall quantiles for all classes
+with open('files/all_class_recall_quantiles.pickle', 'rb') as file:
+  recall_q1, recall_q2, recall_q3, recall_q4 = pickle.load(file)
+
+# add recall quantiles and recall proportion to each target class in the data table  
+data['recall_quantile'] = np.where(data['class_number'].isin(recall_q1),'Q1',
+                                   np.where(data['class_number'].isin(recall_q2), 'Q2',
+                                            np.where(data['class_number'].isin(recall_q3), 'Q3',
+                                                     np.where(data['class_number'].isin(recall_q4), 'Q4',
+                                                              '')
+                                                     )
+                                            )
+                                   )
+target_class_recall_proportions = per_class_recall[data['class_number'].astype(int)]
+data['recall'] = target_class_recall_proportions
+data.sort_values(by=['recall_quantile', 'recall'], inplace=True)
+
+sns.lmplot(x='recall', y='d_prime', data=data, hue='intensity')
+plt.title('d_prime vs recall by intensity level')
+plt.show()
+
+for measure in measures:
+  plot_data = data.groupby(by=['intensity', 'recall_quantile'])[measure].mean().reset_index()
+  plot_data = plot_data.pivot(index='intensity',
+                        columns='recall_quantile',
+                        values=measure)
+  sns.heatmap(plot_data, annot=True, fmt=".3f", cmap='viridis')
+  plt.title('{} by intensity and recall_quantile'.format(measure))
+  plt.show()
+  
+  

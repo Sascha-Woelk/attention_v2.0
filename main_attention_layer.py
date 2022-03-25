@@ -15,7 +15,7 @@ except:
 print(hyper_params['config_name'])
 
 # import 20 target classes based on recall quantile split
-with open('files/class_recall_quantiles.pickle', 'rb') as file:
+with open('files/target_class_recall_quantiles.pickle', 'rb') as file:
   samples_recall_q1, samples_recall_q2, samples_recall_q3, samples_recall_q4 = pickle.load(file)
 target_classes = np.hstack((samples_recall_q1, samples_recall_q2, samples_recall_q3, samples_recall_q4))
 
