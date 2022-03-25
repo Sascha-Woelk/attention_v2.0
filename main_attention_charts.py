@@ -151,4 +151,13 @@ for measure in measures:
   plt.title('{} by intensity and recall_quantile'.format(measure))
   plt.show()
   
-  
+d_prime_deltas = data.pivot(index='class_number',
+                            columns='intensity',
+                            values='d_prime')
+d_prime_deltas['delta'] = d_prime_deltas[0.9] - d_prime_deltas[0.1]
+recall_proportions = per_class_recall[d_prime_deltas.index.astype(int)]
+d_prime_deltas['recall'] = recall_proportions
+sns.regplot(x='recall', y='delta', data=d_prime_deltas)
+plt.ylabel('Change in d_prime')
+plt.title('Change in d-prime from alpha=0.1 to alpha=0.9')
+plt.show()
