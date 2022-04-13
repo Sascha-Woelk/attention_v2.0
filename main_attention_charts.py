@@ -1,8 +1,6 @@
 # import libraries
 from matplotlib.pyplot import cla
 from modules.setup_file import *
-import glob
-import pandas as pd
 
 import seaborn as sns
 sns.set(rc={'axes.facecolor':'white', 'figure.facecolor':'white'})
@@ -157,7 +155,11 @@ d_prime_deltas = data.pivot(index='class_number',
 d_prime_deltas['delta'] = d_prime_deltas[0.9] - d_prime_deltas[0.1]
 recall_proportions = per_class_recall[d_prime_deltas.index.astype(int)]
 d_prime_deltas['recall'] = recall_proportions
-sns.regplot(x='recall', y='delta', data=d_prime_deltas)
+
+slope, intercept, r_value, p_value, std_err = stats.linregress(d_prime_deltas.recall, d_prime_deltas.delta)
+
+sns.regplot(x='recall', y='delta', data=d_prime_deltas, line_kws={'label':"R-squared={:.3f}, P={:.3f}".format(r_value,p_value)})
+plt.legend()
 plt.ylabel('Change in d_prime')
 plt.title('Change in d-prime from alpha=0.1 to alpha=0.9')
 plt.show()

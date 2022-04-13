@@ -14,13 +14,19 @@ except:
   sampling_rate = None
 print(hyper_params['config_name'])
 
-# import 20 target classes based on recall quantile split
-with open('files/target_class_recall_quantiles.pickle', 'rb') as file:
-  samples_recall_q1, samples_recall_q2, samples_recall_q3, samples_recall_q4 = pickle.load(file)
-target_classes = np.hstack((samples_recall_q1, samples_recall_q2, samples_recall_q3, samples_recall_q4))
+# # import 120 target classes based on recall quantile split
+# with open('files/target_class_recall_6_quantiles.pickle', 'rb') as file:
+#   samples_recall_q1, samples_recall_q2, samples_recall_q3, samples_recall_q4, samples_recall_q5, samples_recall_q6 = pickle.load(file)
+# target_classes = np.hstack((samples_recall_q1, samples_recall_q2, samples_recall_q3, samples_recall_q4, samples_recall_q5, samples_recall_q6))
+
+# import list of classes for which the attention model has already been run (this is only in case one intends to run additional models for these classes)
+with open('files/run_classes.pickle', 'rb') as file:
+    run_classes = pickle.load(file)
+    target_classes = run_classes
 
 # define attention intensity levels to test
-attention_levels = [0.9, 0.7, 0.5, 0.3, 0.1]
+# attention_levels = [0.9, 0.7, 0.5, 0.3, 0.1, 0.01, 0.001]
+attention_levels = [0.001]
 
 # loop over all target classes x attention intensity levels to train the attention layer and evaluate
 for target_class in target_classes:
@@ -67,10 +73,10 @@ for target_class in target_classes:
                   loss=loss,
                   metrics=['accuracy'])
     
-    # evaluate the retrained model
-    base_loss, base_accuracy = base_model.evaluate(test_generator)
-    print("retrained base model loss: {:.2f}".format(base_loss))
-    print("retrained base model accuracy: {:.2f}".format(base_accuracy))
+    # # evaluate the retrained model
+    # base_loss, base_accuracy = base_model.evaluate(test_generator)
+    # print("retrained base model loss: {:.2f}".format(base_loss))
+    # print("retrained base model accuracy: {:.2f}".format(base_accuracy))
 
     ## construct the new model with the additional layer
     # build a test model only up to and including the attention layer
@@ -145,69 +151,71 @@ for target_class in target_classes:
                   metrics=['accuracy',
                           tf.keras.metrics.TopKCategoricalAccuracy(k=5, name='top_k_categorical_accuracy', dtype=None)])
 
-    # evaluate the untrained attention model
-    untrained_attention_loss, untrained_attention_accuracy, untrained_attention_top5accuracy = attention_model.evaluate(test_generator)
-    print("untrained attention model loss: {:.2f}".format(untrained_attention_loss))
-    print("untrained attention model accuracy: {:.2f}".format(untrained_attention_accuracy))
-    print("untrained attention model top5accuracy: {:.2f}".format(untrained_attention_top5accuracy))
+    # # evaluate the untrained attention model
+    # untrained_attention_loss, untrained_attention_accuracy, untrained_attention_top5accuracy = attention_model.evaluate(test_generator)
+    # print("untrained attention model loss: {:.2f}".format(untrained_attention_loss))
+    # print("untrained attention model accuracy: {:.2f}".format(untrained_attention_accuracy))
+    # print("untrained attention model top5accuracy: {:.2f}".format(untrained_attention_top5accuracy))
 
-    # define callbacks
-    callbacks = [
-        tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=hyper_params['patience'], mode='auto'),
-        tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path,
-                                          monitor='val_loss',
-                                          verbose=1,
-                                          save_best_only=True,
-                                          save_weights_only=True,
-                                          mode='auto',
-                                          save_freq='epoch',
-                                          options=None),
-        tf.keras.callbacks.ReduceLROnPlateau(monitor='val_loss',
-                                            factor=hyper_params['reduceLROP_factor'],
-                                            patience=hyper_params['patience'],
-                                            verbose=0,
-                                            mode='auto'),
-        tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
-      ]
+    if intensity != 0.001:
+    
+      # define callbacks
+      callbacks = [
+          tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=hyper_params['patience'], mode='auto'),
+          tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path,
+                                            monitor='val_loss',
+                                            verbose=1,
+                                            save_best_only=True,
+                                            save_weights_only=True,
+                                            mode='auto',
+                                            save_freq='epoch',
+                                            options=None),
+          tf.keras.callbacks.ReduceLROnPlateau(monitor='val_loss',
+                                              factor=hyper_params['reduceLROP_factor'],
+                                              patience=hyper_params['patience'],
+                                              verbose=0,
+                                              mode='auto'),
+          tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
+        ]
 
-    # fit the base model on the ImageNet dataset
-    history = attention_model.fit(train_generator,
-                                  epochs=hyper_params['epochs'],
-                                  batch_size=hyper_params['batch_size'],
-                                  validation_data=validation_generator,
-                                  verbose=1,
-                                  callbacks=callbacks)
+      # fit the base model on the ImageNet dataset
+      history = attention_model.fit(train_generator,
+                                    epochs=hyper_params['epochs'],
+                                    batch_size=hyper_params['batch_size'],
+                                    validation_data=validation_generator,
+                                    verbose=1,
+                                    callbacks=callbacks)
 
-    # graph the history for accuracy
-    fig = plt.figure()
-    fig.patch.set_facecolor('white')
-    plt.plot(history.history["accuracy"])
-    plt.plot(history.history['val_accuracy'])
-    plt.title("model accuracy")
-    plt.ylabel("Accuracy")
-    plt.xlabel("Epoch")
-    plt.legend(["Training Accuracy","Validation Accuracy","loss","Validation Loss"])
-    plt.savefig(charts_dir + '{}_accuracy_class{}_intensity{}.png'.format(dt.datetime.today().date(), target_class, int(intensity*1000)))
-    plt.show()
+      # graph the history for accuracy
+      fig = plt.figure()
+      fig.patch.set_facecolor('white')
+      plt.plot(history.history["accuracy"])
+      plt.plot(history.history['val_accuracy'])
+      plt.title("model accuracy")
+      plt.ylabel("Accuracy")
+      plt.xlabel("Epoch")
+      plt.legend(["Training Accuracy","Validation Accuracy","loss","Validation Loss"])
+      plt.savefig(charts_dir + '{}_accuracy_class{}_intensity{}.png'.format(dt.datetime.today().date(), target_class, int(intensity*1000)))
+      plt.show()
 
-    # graph the history for loss
-    fig = plt.figure()
-    fig.patch.set_facecolor('white')
-    plt.plot(history.history['loss'])
-    plt.plot(history.history['val_loss'])
-    plt.title('model loss')
-    plt.ylabel('loss')
-    plt.xlabel('epoch')
-    plt.legend(['Training Loss', 'Validation Loss'], loc='upper left')
-    plt.savefig(charts_dir + '{}_loss__class{}_intensity{}.png'.format(dt.datetime.today().date(), target_class, int(intensity*1000)))
-    plt.show()
+      # graph the history for loss
+      fig = plt.figure()
+      fig.patch.set_facecolor('white')
+      plt.plot(history.history['loss'])
+      plt.plot(history.history['val_loss'])
+      plt.title('model loss')
+      plt.ylabel('loss')
+      plt.xlabel('epoch')
+      plt.legend(['Training Loss', 'Validation Loss'], loc='upper left')
+      plt.savefig(charts_dir + '{}_loss__class{}_intensity{}.png'.format(dt.datetime.today().date(), target_class, int(intensity*1000)))
+      plt.show()
 
     # evaluate the retrained model
     trained_attention_loss, trained_attention_accuracy, trained_attention_top5accuracy = attention_model.evaluate(test_generator)
     print("trained attention model loss: {:.2f}".format(trained_attention_loss))
     print("trained attention model accuracy: {:.2f}".format(trained_attention_accuracy))
     print("trained attention model top5accuracy: {:.2f}".format(trained_attention_top5accuracy))
-    
+  
     # create confusion matrix
     test_predictions = attention_model.predict(test_generator)
     Y_pred = tf.argmax(test_predictions, axis=-1)

@@ -9,6 +9,7 @@ import re
 import datetime as dt
 import tensorflow as tf
 import pickle
+import glob
 
 # set up GPUs and output
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
