@@ -81,7 +81,10 @@ class CustomIterator(IteratorType):
                 print("Ignoring sampling rate, as target class weight has priority.")
             # identify how many sample to take across non-target classee
             self.target_class_size = len(self.target_class_indices)
-            self.non_target_class_size = self.target_class_size / self.target_class_weight - self.target_class_size
+            if self.target_class_size / self.target_class_weight > self.n:
+                self.non_target_class_size = self.n - self.target_class_size
+            else:
+                self.non_target_class_size = self.target_class_size / self.target_class_weight - self.target_class_size
             # resample the target and non-target-indices based on required weighting
             self.non_target_class_indices = np.random.choice(self.non_target_class_indices, size=int(self.non_target_class_size))
             print("Target class weight set to {}. Making available {} images across target (sub-)classes and {} images randomly sampled across all non-target classes.".format(self.target_class_weight, self.target_class_size, self.non_target_class_size))

@@ -210,11 +210,11 @@ for target_class in target_classes:
       plt.savefig(charts_dir + '{}_loss__class{}_intensity{}.png'.format(dt.datetime.today().date(), target_class, int(intensity*1000)))
       plt.show()
 
-    # evaluate the retrained model
-    trained_attention_loss, trained_attention_accuracy, trained_attention_top5accuracy = attention_model.evaluate(test_generator)
-    print("trained attention model loss: {:.2f}".format(trained_attention_loss))
-    print("trained attention model accuracy: {:.2f}".format(trained_attention_accuracy))
-    print("trained attention model top5accuracy: {:.2f}".format(trained_attention_top5accuracy))
+    # # evaluate the retrained model
+    # trained_attention_loss, trained_attention_accuracy, trained_attention_top5accuracy = attention_model.evaluate(test_generator)
+    # print("trained attention model loss: {:.2f}".format(trained_attention_loss))
+    # print("trained attention model accuracy: {:.2f}".format(trained_attention_accuracy))
+    # print("trained attention model top5accuracy: {:.2f}".format(trained_attention_top5accuracy))
   
     # create confusion matrix
     test_predictions = attention_model.predict(test_generator)
