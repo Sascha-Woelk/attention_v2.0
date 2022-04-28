@@ -1,12 +1,11 @@
 # import libraries
-from matplotlib.pyplot import cla
 from modules.setup_file import *
 
 import seaborn as sns
 sns.set(rc={'axes.facecolor':'white', 'figure.facecolor':'white'})
 sns.set_style('darkgrid')
 
-from scipy.stats import norm
+from scipy import stats
 import math
 
 # identify current working directory and set up subdirectories
@@ -14,7 +13,7 @@ working_directory = os.getcwd()
 charts_dir = os.path.join(working_directory, 'charts/')
 
 # Define function to calculate d-prime measures
-Z = norm.ppf
+Z = stats.norm.ppf
 def SDT(hits, misses, fas, crs):
     """ returns a dict with d-prime measures given hits, misses, false alarms, and correct rejections"""
     # Floors an ceilings are replaced by half hits and half FA's
@@ -40,7 +39,7 @@ def SDT(hits, misses, fas, crs):
     out['d'] = Z(hit_rate) - Z(fa_rate)
     out['beta'] = math.exp((Z(fa_rate)**2 - Z(hit_rate)**2) / 2)
     out['c'] = -(Z(hit_rate) + Z(fa_rate)) / 2
-    out['Ad'] = norm.cdf(out['d'] / math.sqrt(2))
+    out['Ad'] = stats.norm.cdf(out['d'] / math.sqrt(2))
     
     return(out)
 
